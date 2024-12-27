@@ -3,6 +3,7 @@ const multer = require('multer');
 const { spawn,exec } = require('child_process');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs'); 
 
 const app = express();
 const PORT = 5000;
@@ -67,6 +68,15 @@ app.post('/detect-image', upload.single('image'), (req, res) => {
           message: 'Image detection completed!',
           imageBase64: base64Image,
         });
+
+        fs.unlink(imagePath, (err) => {
+            if (err) {
+                console.error(`Error deleting file ${imagePath}:`, err);
+            } else {
+                console.log(`Image deleted: ${imagePath}`);
+            }
+        });
+
       } else {
         res.status(500).json({ error: 'Image detection failed!' });
       }
