@@ -81,34 +81,43 @@ const ObjectDetection = () => {
 
     try {
       setLoading(true);
+
+      // Send the video to the backend for processing
       const response = await axios.post('http://localhost:5000/detect-video', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      console.log('this is response', response.data);
+      console.log('Response:', response.data);
 
-      // Extract the base64 video string from the response
+      // Extract the base64-encoded video string from the response
       const base64Video = response.data.videoBase64;
 
       // Create a Blob from the Base64 string
-      const videoBlob = await fetch(base64Video)
-        .then(res => res.blob());
+      const binaryString = atob(base64Video.split(',')[1]);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const videoBlob = new Blob([bytes], { type: 'video/mp4' });
+      console.log('Video MIME Type:', videoBlob.type);
 
       // Create a URL from the Blob for the video element
       setAnnotatedVideo(URL.createObjectURL(videoBlob));
 
       toast.success("Video detection completed!");
-      setLoading(false);
     } catch (error) {
       console.error('Error in video detection:', error.response ? error.response.data : error.message);
       toast.error("Video detection failed!");
+    } finally {
       setLoading(false);
     }
   };
 
 
+  console.log(annotatedVideo)
 
   return (
     <div className="flex flex-col space-y-10 items-center justify-center min-h-screen bg-gray-100">
@@ -197,8 +206,7 @@ const ObjectDetection = () => {
               <h3 className="mb-4 font-semibold">Annotated Video:</h3>
               <div className="w-full h-full overflow-hidden border border-gray-300">
                 <video
-                  src={annotatedVideo}
-                  controls
+                  src={annotatedVideo}  // This should be set correctly to the Blob URL
                   autoPlay={true}
                   loop={true}
                   muted={true}

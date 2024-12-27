@@ -83,57 +83,65 @@ app.post('/detect-image', upload.single('image'), (req, res) => {
     });
   });
 
-app.post('/detect-video', upload.single('video'), (req, res) => {
+  app.post('/detect-video', upload.single('video'), (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ error: 'No video file uploaded' });
+        return res.status(400).json({ error: 'No video file uploaded' });
     }
-  
+
     console.log('Video received, processing...');
-    const videoBuffer = req.file.buffer; // Video data from memory
-  
-    // Specify the path to the Python executable in your virtual environment
+
+    // Path to the uploaded video
+    const videoPath = path.resolve(req.file.path);
+
+    // Path to Python executable and script
     const pythonPath = "C:\\Users\\JAI CHAWLA\\Desktop\\project_2\\backend\\myenv\\Scripts\\python.exe"; // Update this to your Python path
-    const pythonScriptPath = 'video_detection.py'; // Path to your Python script
-  
+    const pythonScriptPath = path.resolve('original_video.py'); // Path to your Python script
+
     // Spawn the Python process
-    const pythonProcess = spawn(pythonPath, [pythonScriptPath], {
-      stdio: ['pipe', 'pipe', 'pipe'], // Enable communication via stdin, stdout, and stderr
-    });
-  
+    const pythonProcess = spawn(pythonPath, [pythonScriptPath, videoPath]);
+
     let output = '';
-  
-    // Pipe the video buffer to the Python script via stdin
-    pythonProcess.stdin.write(videoBuffer);
-    pythonProcess.stdin.end();
-  
-    // Collect the base64-encoded video output from stdout
+    let errorOutput = '';
+
+    // Collect the base64-encoded video from stdout
     pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();
+        output += data.toString();
     });
-  
+
+    // Collect any error messages from stderr
     pythonProcess.stderr.on('data', (data) => {
-      console.error(`Python error: ${data}`);
+        errorOutput += data.toString();
     });
-  
-    pythonProcess.on('error', (err) => {
-      console.error('Failed to start Python process:', err);
-    });
-  
+
+    // Handle Python process completion
     pythonProcess.on('close', (code) => {
-      if (code === 0) {
-        // Send the base64-encoded video as the response
-        const base64Video = `data:video/mp4;base64,${output.trim()}`;
-        res.status(200).json({
-          message: 'Video detection completed!',
-          videoBase64: base64Video,
+        console.log('completed');
+        fs.unlink(videoPath, (err) => {
+            if (err) console.error(`Failed to delete file: ${videoPath}`);
         });
-        console.log('successfully sent video')
-      } else {
-        res.status(500).json({ error: 'Video detection failed!' });
-        console.log('error occured')
-      }
+
+        if (code === 0) {
+            // Send the base64-encoded annotated video as the response
+            res.status(200).json({
+                message: 'Video detection completed!',
+                videoBase64: `data:video/mp4;base64,${output.trim()}`,
+            });
+        } else {
+            console.error(`Python script exited with code ${code}`);
+            console.error(`Python script errors: ${errorOutput}`);
+            res.status(500).json({
+                error: 'Video detection failed!',
+                details: errorOutput,
+            });
+        }
     });
-  });
+
+    // Handle Python process errors
+    pythonProcess.on('error', (err) => {
+        console.error('Failed to start Python process:', err);
+        res.status(500).json({ error: 'Failed to start Python process' });
+    });
+});
 
 
 
