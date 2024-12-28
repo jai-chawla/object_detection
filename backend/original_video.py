@@ -9,7 +9,7 @@ import time
 logging.getLogger('ultralytics').setLevel(logging.CRITICAL)
 
 # Load YOLO model
-chosen_model = YOLO("yolov8s.pt", verbose=False)
+chosen_model = YOLO("yolov8n.pt", verbose=False)
 
 def process_video(video_path, chosen_model, conf=0.3):
     # Open the video file
@@ -37,10 +37,10 @@ def process_video(video_path, chosen_model, conf=0.3):
         for result in results:
             for box in result.boxes:
                 cv2.rectangle(frame, (int(box.xyxy[0][0]), int(box.xyxy[0][1])),
-                              (int(box.xyxy[0][2]), int(box.xyxy[0][3])), (255, 0, 0), 2)
+                              (int(box.xyxy[0][2]), int(box.xyxy[0][3])), (0, 255, 255), 2)
                 cv2.putText(frame, f"{result.names[int(box.cls[0])]}",
                             (int(box.xyxy[0][0]), int(box.xyxy[0][1]) - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)
 
         output_frames.append(frame)
 

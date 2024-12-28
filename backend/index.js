@@ -112,10 +112,10 @@ app.post('/detect-image', upload.single('image'), (req, res) => {
     pythonProcess.on('close', (code) => {
         output = output.trim();
         console.log('this is annoted file path from python',output);
-        // fs.unlink(videoPath, (err) => {
-        //     if (err) console.error(`Failed to delete file: ${videoPath}`);
-        // });
-        // console.log('original video deleted successfully');
+        fs.unlink(videoPath, (err) => {
+            if (err) console.error(`Failed to delete file: ${videoPath}`);
+        });
+        console.log('original video deleted successfully');
 
         if (code === 0) {
             // The output of your python script will be the base64 video string

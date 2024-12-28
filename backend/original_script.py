@@ -9,9 +9,9 @@ import logging
 
 logging.getLogger('ultralytics').setLevel(logging.CRITICAL)
 # Load the YOLO model
-chosen_model = YOLO("yolov8n.pt", verbose=False)  # Load the YOLO model
+chosen_model = YOLO("yolov8l.pt", verbose=False)  # Load the YOLO model
 
-def predict(chosen_model, img, classes=[], conf=0.3):
+def predict(chosen_model, img, classes=[], conf=0.4):
     """Predict bounding boxes and classes."""
     if classes:
         results = chosen_model.predict(img, classes=classes, conf=conf)
@@ -19,19 +19,19 @@ def predict(chosen_model, img, classes=[], conf=0.3):
         results = chosen_model.predict(img, conf=conf)
     return results
 
-def predict_and_detect(chosen_model, img, classes=[], conf=0.3, rectangle_thickness=2, fontScale=3, text_thickness=2):
+def predict_and_detect(chosen_model, img, classes=[], conf=0.4, rectangle_thickness=2, fontScale=3, text_thickness=3):
     """Run predictions and annotate the image with bounding boxes and labels."""
     results = predict(chosen_model, img, classes, conf=conf)
     for result in results:
         for box in result.boxes:
             # Draw the bounding box
             cv2.rectangle(img, (int(box.xyxy[0][0]), int(box.xyxy[0][1])),
-                          (int(box.xyxy[0][2]), int(box.xyxy[0][3])), (255, 0, 0), rectangle_thickness)
+                          (int(box.xyxy[0][2]), int(box.xyxy[0][3])), (0, 255, 255), rectangle_thickness)
 
             # Put the label text
             cv2.putText(img, f"{result.names[int(box.cls[0])]}",
                         (int(box.xyxy[0][0]), int(box.xyxy[0][1]) - 10),
-                        cv2.FONT_HERSHEY_PLAIN, fontScale, (255, 0, 0), text_thickness)
+                        cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 255), text_thickness)
     return img, results
 
 def image_to_base64(image):

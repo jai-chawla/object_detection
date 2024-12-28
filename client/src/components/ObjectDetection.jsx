@@ -13,7 +13,8 @@ const ObjectDetection = () => {
   const [videoFile, setVideoFile] = useState(null); // State to store the actual video file to upload
   const [annotatedVideo, setAnnotatedVideo] = useState(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [loadingVideo, setLoadingVideo] = useState(false);
 
   // Handle image file upload
   const handleFileSelect = (event) => {
@@ -49,7 +50,7 @@ const ObjectDetection = () => {
     formData.append('image', file);
 
     try {
-      setLoading(true);
+      setLoadingImage(true);
       const response = await axios.post('http://localhost:5000/detect-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -61,11 +62,11 @@ const ObjectDetection = () => {
       setAnnotatedImage(base64Image);
 
       toast.success("Object detection completed!");
-      setLoading(false);
+      setLoadingImage(false);
     } catch (error) {
       console.error('Error in object detection:', error.response ? error.response.data : error.message);
       toast.error("Object detection failed!");
-      setLoading(false);
+      setLoadingImage(false);
     }
   };
 
@@ -81,7 +82,7 @@ const ObjectDetection = () => {
     formData.append('video', videoFile);
 
     try {
-      setLoading(true);
+      setLoadingVideo(true);
       const response = await axios.post('http://localhost:5000/detect-video', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -91,14 +92,14 @@ const ObjectDetection = () => {
 
       const videoBlob = new Blob([response.data], { type: 'video/mp4' });
 
-    // Create a URL from the Blob for the download link
-    const videoUrl = URL.createObjectURL(videoBlob);
+      // Create a URL from the Blob for the download link
+      const videoUrl = URL.createObjectURL(videoBlob);
 
-    // Create an anchor element for downloading
-    const downloadLink = document.createElement('a');
-    downloadLink.href = videoUrl;
-    downloadLink.download = 'annotated_video.mp4'; // Set the desired file name
-    downloadLink.click(); // Trigger the download
+      // // Create an anchor element for downloading
+      // const downloadLink = document.createElement('a');
+      // downloadLink.href = videoUrl;
+      // downloadLink.download = 'annotated_video.mp4'; // Set the desired file name
+      // downloadLink.click(); // Trigger the download
 
       setAnnotatedVideo(videoUrl);
       toast.success('Video detection completed!');
@@ -106,7 +107,7 @@ const ObjectDetection = () => {
       console.error('Error uploading video:', error);
       toast.error('Video upload failed!');
     } finally {
-      setLoading(false);
+      setLoadingVideo(false);
     }
   };
 
@@ -114,18 +115,60 @@ const ObjectDetection = () => {
   console.log(annotatedVideo)
 
   return (
-    <div className="flex flex-col space-y-10 items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col space-y-10 items-center justify-center min-h-screen bg-gray-200">
       <div>
-        <h1 className='text-4xl font-semibold'>OBJECT DETECTION</h1>
+        <h1 className='text-4xl font-semibold mt-10'>OBJECT DETECTION</h1>
       </div>
 
       {/* Image Section */}
       <div className="text-center">
         <div className="mb-6 flex items-center justify-center space-x-5">
-          {image ? (
+
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Image 1:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <img
+                src="/sample_files/clock.jpg"
+                alt="Uploaded Preview"
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Output 1:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <img
+                src="/sample_files/clock_output.jpeg"
+                alt="Uploaded Preview"
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Image 2:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <img
+                src="/sample_files/animals.jpg"
+                alt="Uploaded Preview"
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Output 2:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <img
+                src="/sample_files/animals_output.jpeg"
+                alt="Uploaded Preview"
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+
+          {image && (
             <div className='mt-6'>
-              <h3 className="mb-4 font-semibold">Original Image:</h3>
-              <div className='w-56 h-56 overflow-hidden border border-gray-300'>
+              <h3 className="mb-4 font-semibold">Uploaded Image:</h3>
+              <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
                 <img
                   src={image}
                   alt="Uploaded Preview"
@@ -133,14 +176,12 @@ const ObjectDetection = () => {
                 />
               </div>
             </div>
-          ) : (
-            <FiUpload className="w-24 h-24 text-blue-600" />
           )}
 
-          {!loading && annotatedImage && (
+          {!loadingImage && annotatedImage && (
             <div className="mt-6">
               <h3 className="mb-4 font-semibold">Annotated Image:</h3>
-              <div className="w-56 h-56 overflow-hidden border border-gray-300 ">
+              <div className="w-48 h-48 overflow-hidden border border-gray-300 rounded-lg">
                 <img
                   src={annotatedImage}
                   alt="Annotated Preview"
@@ -150,7 +191,7 @@ const ObjectDetection = () => {
             </div>
           )}
 
-          {loading && <Loader />}
+          {loadingImage && <Loader />}
         </div>
 
         <div className='flex space-x-3 items-center justify-center'>
@@ -178,10 +219,63 @@ const ObjectDetection = () => {
       {/* Video Section */}
       <div className="text-center mt-10">
         <div className="mb-6 flex items-center justify-center space-x-5">
-          {video ? (
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Video 1:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <video
+                src="/sample_files/sample_video_1.mp4"
+                autoPlay={true}
+                loop={true}
+                muted={true}
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Output 1:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <video
+                src="/sample_files/sample_video_1_output.mp4"
+                autoPlay={true}
+                loop={true}
+                muted={true}
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Video 2:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <video
+                src="/sample_files/sample_video_2.webm"
+                autoPlay={true}
+                loop={true}
+                muted={true}
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+
+          <div className='mt-6'>
+            <h3 className="mb-4 font-semibold">Sample Output 1:</h3>
+            <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
+              <video
+                src="/sample_files/sample_video_2_output.mp4"
+                autoPlay={true}
+                loop={true}
+                muted={true}
+                className="w-full h-full object-contain rounded-lg border border-gray-300"
+              />
+            </div>
+          </div>
+
+
+          {video && (
             <div className='mt-6'>
               <h3 className="mb-4 font-semibold">Original Video:</h3>
-              <div className='w-56 h-56 overflow-hidden border border-gray-300'>
+              <div className='w-48 h-48 overflow-hidden border border-gray-300 rounded-lg'>
                 <video
                   src={video}
                   autoPlay={true}
@@ -191,18 +285,15 @@ const ObjectDetection = () => {
                 />
               </div>
             </div>
-          ) : (
-            <FiUpload className="w-24 h-24 text-blue-600" />
           )}
 
-          {!loading && annotatedVideo && (
+          {!loadingVideo && annotatedVideo && (
             <div className="mt-6">
               <h3 className="mb-4 font-semibold">Annotated Video:</h3>
-              <div className="w-56 h-56 overflow-hidden border border-gray-300">
+              <div className="w-48 h-48 overflow-hidden border border-gray-300 rounded-lg">
                 {annotatedVideo && <video
                   src={annotatedVideo}  // This should be set correctly to the Blob URL
                   autoPlay={true}
-                  controls
                   loop={true}
                   muted={true}
                   className="object-contain w-full h-full rounded-lg"
@@ -212,7 +303,7 @@ const ObjectDetection = () => {
           )}
 
 
-          {loading && <Loader />}
+          {loadingVideo && <Loader />}
         </div>
 
         <div className='flex space-x-3 items-center justify-center'>
