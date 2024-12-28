@@ -1,24 +1,17 @@
 import sys
 import cv2
-import base64
-from ultralytics import YOLO
 import os
-
-# Suppress YOLO library logs
+from ultralytics import YOLO
 import logging
+import time
+
+
 logging.getLogger('ultralytics').setLevel(logging.CRITICAL)
 
 # Load YOLO model
 chosen_model = YOLO("yolov8s.pt", verbose=False)
 
 def process_video(video_path, chosen_model, conf=0.3):
-    """
-    Process the video file, perform object detection, annotate the frames, and return the annotated video as base64.
-    """
-    if not os.path.exists(video_path):
-        print(f"Error: Video file not found at {video_path}", file=sys.stderr)
-        sys.exit(1)
-
     # Open the video file
     video_stream = cv2.VideoCapture(video_path)
 
@@ -30,9 +23,7 @@ def process_video(video_path, chosen_model, conf=0.3):
     frame_width = int(video_stream.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(video_stream.get(cv2.CAP_PROP_FPS))
-    temp_output_path = "annotated_output.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(temp_output_path, fourcc, fps, (frame_width, frame_height))
+    output_frames = []
 
     while True:
         ret, frame = video_stream.read()
@@ -51,32 +42,41 @@ def process_video(video_path, chosen_model, conf=0.3):
                             (int(box.xyxy[0][0]), int(box.xyxy[0][1]) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-        out.write(frame)
+        output_frames.append(frame)
 
     video_stream.release()
+
+    # Create a 'processed' directory if it doesn't exist
+    processed_dir = 'processed'
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
+
+    # Generate a unique filename using the current timestamp
+    timestamp = int(time.time())  # Current Unix timestamp
+    unique_filename = f"annotated_video_{timestamp}.mp4"
+    output_video_path = os.path.join(processed_dir, unique_filename)
+
+    # Write the annotated frames to the output video file
+    # Using libx264 for H.264 video codec and AAC for audio codec
+    fourcc = cv2.VideoWriter_fourcc(*'X264')  # This is usually for H.264 codec
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+
+    for frame in output_frames:
+        out.write(frame)
     out.release()
 
-    # Convert annotated video to base64
-    with open(temp_output_path, "rb") as f:
-        base64_video = base64.b64encode(f.read()).decode("utf-8")
-
-    # Clean up temporary output file
-    os.remove(temp_output_path)
-
-    return base64_video
+    # Return the path to the processed video
+    return output_video_path
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python video_detection.py <video_path>", file=sys.stderr)
-        sys.exit(1)
-
+    # Read video path from argument
     video_path = sys.argv[1]
 
-    # Process video and get the base64-encoded video
-    base64_video = process_video(video_path, chosen_model)
+    # Process video and get the path to the annotated video
+    output_video_path = process_video(video_path, chosen_model)
 
-    # Output the base64 string
-    print(base64_video)
+    # Output the path to the processed video
+    print(output_video_path)
 
 if __name__ == '__main__':
     main()

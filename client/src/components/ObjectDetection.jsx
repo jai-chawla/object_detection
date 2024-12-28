@@ -70,9 +70,10 @@ const ObjectDetection = () => {
   };
 
   // Handle object detection for videos
+
   const handleVideoDetection = async () => {
     if (!videoFile) {
-      toast.error("Please select a video first!");
+      toast.error('Please select a video file first!');
       return;
     }
 
@@ -81,36 +82,29 @@ const ObjectDetection = () => {
 
     try {
       setLoading(true);
-
-      // Send the video to the backend for processing
       const response = await axios.post('http://localhost:5000/detect-video', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        responseType: 'blob', // Ensure the response is treated as a binary stream
       });
 
-      console.log('Response:', response.data);
+      const videoBlob = new Blob([response.data], { type: 'video/mp4' });
 
-      // Extract the base64-encoded video string from the response
-      const base64Video = response.data.videoBase64;
+    // Create a URL from the Blob for the download link
+    const videoUrl = URL.createObjectURL(videoBlob);
 
-      // Create a Blob from the Base64 string
-      const binaryString = atob(base64Video.split(',')[1]);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const videoBlob = new Blob([bytes], { type: 'video/mp4' });
-      console.log('Video MIME Type:', videoBlob.type);
+    // Create an anchor element for downloading
+    const downloadLink = document.createElement('a');
+    downloadLink.href = videoUrl;
+    downloadLink.download = 'annotated_video.mp4'; // Set the desired file name
+    downloadLink.click(); // Trigger the download
 
-      // Create a URL from the Blob for the video element
-      setAnnotatedVideo(URL.createObjectURL(videoBlob));
-
-      toast.success("Video detection completed!");
+      setAnnotatedVideo(videoUrl);
+      toast.success('Video detection completed!');
     } catch (error) {
-      console.error('Error in video detection:', error.response ? error.response.data : error.message);
-      toast.error("Video detection failed!");
+      console.error('Error uploading video:', error);
+      toast.error('Video upload failed!');
     } finally {
       setLoading(false);
     }
@@ -204,14 +198,15 @@ const ObjectDetection = () => {
           {!loading && annotatedVideo && (
             <div className="mt-6">
               <h3 className="mb-4 font-semibold">Annotated Video:</h3>
-              <div className="w-full h-full overflow-hidden border border-gray-300">
-                <video
+              <div className="w-56 h-56 overflow-hidden border border-gray-300">
+                {annotatedVideo && <video
                   src={annotatedVideo}  // This should be set correctly to the Blob URL
                   autoPlay={true}
+                  controls
                   loop={true}
                   muted={true}
                   className="object-contain w-full h-full rounded-lg"
-                />
+                />}
               </div>
             </div>
           )}

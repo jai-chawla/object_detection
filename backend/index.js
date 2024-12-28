@@ -90,53 +90,60 @@ app.post('/detect-image', upload.single('image'), (req, res) => {
 
     console.log('Video received, processing...');
 
-    // Path to the uploaded video
     const videoPath = path.resolve(req.file.path);
+    console.log('this is file path',videoPath)
 
-    // Path to Python executable and script
-    const pythonPath = "C:\\Users\\JAI CHAWLA\\Desktop\\project_2\\backend\\myenv\\Scripts\\python.exe"; // Update this to your Python path
-    const pythonScriptPath = path.resolve('original_video.py'); // Path to your Python script
+    const pythonPath = "C:\\Users\\JAI CHAWLA\\Desktop\\project_2\\backend\\myenv\\Scripts\\python.exe"; 
+    const pythonScriptPath = path.resolve('original_video.py'); 
 
-    // Spawn the Python process
     const pythonProcess = spawn(pythonPath, [pythonScriptPath, videoPath]);
 
     let output = '';
     let errorOutput = '';
 
-    // Collect the base64-encoded video from stdout
     pythonProcess.stdout.on('data', (data) => {
         output += data.toString();
     });
 
-    // Collect any error messages from stderr
     pythonProcess.stderr.on('data', (data) => {
         errorOutput += data.toString();
     });
 
-    // Handle Python process completion
     pythonProcess.on('close', (code) => {
-        console.log('completed');
-        fs.unlink(videoPath, (err) => {
-            if (err) console.error(`Failed to delete file: ${videoPath}`);
-        });
+        output = output.trim();
+        console.log('this is annoted file path from python',output);
+        // fs.unlink(videoPath, (err) => {
+        //     if (err) console.error(`Failed to delete file: ${videoPath}`);
+        // });
+        // console.log('original video deleted successfully');
 
         if (code === 0) {
-            // Send the base64-encoded annotated video as the response
-            res.status(200).json({
-                message: 'Video detection completed!',
-                videoBase64: `data:video/mp4;base64,${output.trim()}`,
-            });
+            // The output of your python script will be the base64 video string
+            // const uniqueFilename = `annotated_video_${Date.now()}.mp4`;  // You can use UUID here if needed
+            // const outputPath = path.resolve('processed', uniqueFilename);
+
+            
+            const outputPath = path.resolve(output);
+            console.log('absoute path',outputPath);
+            // Ensure the video exists before trying to send it
+            if (fs.existsSync(outputPath)) {
+                res.setHeader('Content-Type', 'video/mp4');
+                res.sendFile(outputPath, (err) => {
+                    if (err) {
+                        console.error('Error sending file:', err);
+                        res.status(500).json({ error: 'Failed to send video file' });
+                    }
+                });
+            } else {
+                res.status(500).json({ error: 'Processed video file not found' });
+            }
         } else {
             console.error(`Python script exited with code ${code}`);
             console.error(`Python script errors: ${errorOutput}`);
-            res.status(500).json({
-                error: 'Video detection failed!',
-                details: errorOutput,
-            });
+            res.status(500).json({ error: 'Video detection failed!', details: errorOutput });
         }
     });
 
-    // Handle Python process errors
     pythonProcess.on('error', (err) => {
         console.error('Failed to start Python process:', err);
         res.status(500).json({ error: 'Failed to start Python process' });
